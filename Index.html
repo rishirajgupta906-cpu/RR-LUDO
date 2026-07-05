@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>RR Ludo Championship</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%23121224%22/><text x=%2250%%22 y=%2265%%22 font-size=%2255%22 font-weight=%22900%22 fill=%22%2300f2fe%22 font-family=%22sans-serif%22 text-anchor=%22middle%22>RR</text></svg>">
+    
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #030305;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* टॉप ब्रांडिंग */
+        .top-brand {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #00f2fe;
+            text-shadow: 0 0 5px rgba(0,242,254,0.6);
+            z-index: 100;
+        }
+
+        /* स्क्रीन मैनेजर */
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            height: 95vh;
+            padding: 20px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+        .screen.active { display: flex; }
+
+        #splash-screen { background: radial-gradient(circle, #121224 0%, #040408 100%); }
+        .big-logo {
+            font-size: 110px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 25px rgba(0,242,254,0.7));
+            animation: pulse 2s infinite;
+        }
+        .made-by { font-size: 14px; color: #a0aec0; margin-top: 15px; letter-spacing: 3px; font-weight: bold; }
+
+        .btn-main {
+            margin-top: 30px;
+            padding: 12px 40px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,242,254,0.4);
+            text-transform: uppercase;
+        }
+        .btn-main:active { transform: scale(0.95); }
+
+        .select-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 25px;
+            width: 100%;
+        }
+        .grid-item {
+            padding: 15px;
+            background: #0f0f1c;
+            border: 2px solid #222238;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .grid-item.selected { border-color: #00f2fe; background: #131c30; box-shadow: 0 0 10px rgba(0,242,254,0.3); }
+
+        .config-scroll { width: 100%; max-height: 55vh; overflow-y: auto; padding-right: 5px; margin-top: 15px; }
+        .player-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0a0a14;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 6px solid #fff;
+        }
+        .player-row input {
+            width: 110px;
+            padding: 6px;
+            background: #141424;
+            border: 1px solid #2b2b44;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            text-align: center;
+        }
+        .type-toggle {
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #1f1f2e;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 95px;
+        }
+        .type-toggle.bot { background: #d35400; }
+
+        #game-screen { padding: 5px; justify-content: flex-start; }
+        #ludo-container {
+            width: 100%;
+            max-width: 380px;
+            aspect-ratio: 1/1;
+            background: #14141a;
+            border: 3px solid #252530;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+
+        .bottom-bar {
+            width: 100%;
+            max-width: 380px;
+            background: #0a0a0f;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 10px;
+            border: 1px solid #181824;
+        }
+        .status-text { font-size: 14px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; min-height: 18px; }
+        .action-zone { display: flex; align-items: center; justify-content: center; gap: 15px; }
+        .dice-view {
+            width: 48px;
+            height: 48px;
+            background: white;
+            color: black;
+            border-radius: 8px;
+            font-size: 26px;
+            line-height: 48px;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+            cursor: pointer;
+        }
+        .btn-twist {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, #ff9900 0%, #ff5500 100%);
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .twist-alert {
+            font-size: 11px;
+            color: #ffcc00;
+            margin-top: 4px;
+            font-weight: bold;
+            min-height: 14px;
+        }
+
+        /* लीडरबोर्ड स्क्रीन */
+        .leaderboard-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 4, 8, 0.96);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+        }
+        .rank-item {
+            width: 85%;
+            padding: 10px 15px;
+            margin: 6px 0;
+            background: #11111f;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.04); opacity: 1; filter: drop-shadow(0 0 30px rgba(0,242,254,0.8)); }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-brand">Rishi Raj</div>
+
+    <div class="screen active" id="splash-screen">
+        <div class="big-logo">RR</div>
+        <div class="made-by">MADE BY RISHI RAJ</div>
+        <button class="btn-main" onclick="changeScreen('player-select-screen')">START GAME</button>
+    </div>
+
+    <div class="screen" id="player-select-screen">
+        <h2 style="font-size: 20px; color: #00f2fe;">खिलाड़ियों की संख्या चुनें</h2>
+        <div class="select-grid">
+            <div class="grid-item" onclick="setTotalPlayers(2)">2 Players</div>
+            <div class="grid-item" onclick="setTotalPlayers(3)">3 Players</div>
+            <div class="grid-item" onclick="setTotalPlayers(4)">4 Players</div>
+            <div class="grid-item" onclick="setTotalPlayers(5)">5 Players</div>
+            <div class="grid-item" onclick="setTotalPlayers(6)">6 Players</div>
+            <div class="grid-item" onclick="setTotalPlayers(7)">7 Players</div>
+            <div class="grid-item selected" onclick="setTotalPlayers(8)">8 Players</div>
+        </div>
+        <button class="btn-main" onclick="changeScreen('config-screen')">NEXT STEP</button>
+    </div>
+
+    <div class="screen" id="config-screen">
+        <h2 style="font-size: 20px; color: #00f2fe;">खिलाड़ी प्रोफाइल सेटिंग</h2>
+        <div class="config-scroll" id="config-list"></div>
+        <button class="btn-main" onclick="startGame()">BATTLE START</button>
+    </div>
+
+    <div class="screen" id="game-screen">
+        <div id="ludo-container">
+            <canvas id="ludoCanvas" width="600" height="600"></canvas>
+            
+            <div id="leaderboard" class="leaderboard-overlay" style="display: none;">
+                <h2 style="color: #00f2fe; margin-bottom: 15px; font-size: 22px;">🏆 अंतिम परिणाम 🏆</h2>
+                <div id="rank-list" style="width:100%; display:flex; flex-direction:column; align-items:center;"></div>
+                <button class="btn-main" onclick="location.reload()">PLAY AGAIN</button>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="status-text" id="turn-indicator">Rishi Raj की बारी है</div>
+            <div class="action-zone">
+                <div class="dice-view" id="dice-element" onclick="handleRoll()">1</div>
+                <button class="btn-main" style="margin:0; padding:11px 25px;" onclick="handleRoll()">ROLL</button>
+                <button class="btn-twist" onclick="triggerGoldenDice()">👑 GOLDEN</button>
+            </div>
+            <div class="twist-alert" id="twist-banner"></div>
+        </div>
+    </div>
+
+    <script>
+        const playerColors = ['#ff2a2a', '#22c55e', '#2563eb', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316'];
+        const botNames = ["AlphaBot", "MegaBot", "TurboBot", "NinjaBot", "ZetaBot", "ProBot", "TitanBot"];
+        
+        let totalPlayers = 8;
+        let gamePlayers = [];
+        let currentPlayerIdx = 0;
+        let diceValue = 1;
+        let isDiceRolled = false;
+        let goldenDiceActive = false;
+        let glowTick = 0;
+        
+        let gameStartTime = 0;
+        let timeModifier = 1; 
+        let winnersList = [];
+
+        const canvas = document.getElementById('ludoCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // लूडो किंग रियल 52-ग्रिड ट्रैक पाथ
+        const boardLayoutCoords = [
+            {x:1, y:6}, {x:2, y:6}, {x:3, y:6}, {x:4, y:6}, {x:5, y:6},
+            {x:6, y:5}, {x:6, y:4}, {x:6, y:3}, {x:6, y:2}, {x:6, y:1}, {x:6, y:0},
+            {x:7, y:0}, {x:8, y:0}, {x:8, y:1}, {x:8, y:2}, {x:8, y:3}, {x:8, y:4}, {x:8, y:5},
+            {x:9, y:6}, {x:10, y:6}, {x:11, y:6}, {x:12, y:6}, {x:13, y:6}, {x:14, y:6},
+            {x:14, y:7}, {x:14, y:8}, {x:13, y:8}, {x:12, y:8}, {x:11, y:8}, {x:10, y:8}, {x:9, y:8},
+            {x:8, y:9}, {x:8, y:10}, {x:8, y:11}, {x:8, y:12}, {x:8, y:13}, {x:8, y:14},
+            {x:7, y:14}, {x:6, y:14}, {x:6, y:13}, {x:6, y:12}, {x:6, y:11}, {x:6, y:10}, {x:6, y:9},
+            {x:5, y:8}, {x:4, y:8}, {x:3, y:8}, {x:2, y:8}, {x:1, y:8}, {x:0, y:8}, {x:0, y:7}, {x:0, y:6}
+        ];
+
+        function changeScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if(screenId === 'config-screen') buildConfigLayout();
+        }
+
+        function setTotalPlayers(num) {
+            totalPlayers = num;
+            document.querySelectorAll('.grid-item').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        function buildConfigLayout() {
+            const list = document.getElementById('config-list');
+            list.innerHTML = "";
+            for(let i=0; i<totalPlayers; i++) {
+                let defaultName = i === 0 ? "Rishi Raj" : (i === 1 ? "Golu" : botNames[i-2]);
+                let isBot = i >= 2;
+                list.innerHTML += `
+                    <div class="player-row" style="border-color: ${playerColors[i]}">
+                        <span style="font-weight:bold; font-size:14px;">P${i+1}</span>
+                        <input type="text" id="pname-${i}" value="${defaultName}" maxlength="10">
+                        <button class="type-toggle ${isBot?'bot':''}" id="ptype-${i}" onclick="togglePlayerType(${i})">
+                            ${isBot ? 'BOT' : 'HUMAN'}
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function togglePlayerType(idx) {
+            const btn = document.getElementById(`ptype-${idx}`);
+            if(btn.classList.contains('bot')) {
+                btn.classList.remove('bot');
+                btn.innerText = "HUMAN";
+            } else {
+                btn.classList.add('bot');
+                btn.innerText = "BOT";
+            }
+        }
+
+        function startGame() {
+            gamePlayers = [];
+            gameStartTime = Date.now();
+            winnersList = [];
+            
+            for(let i=0; i<totalPlayers; i++) {
+                let nameInput = document.getElementById(`pname-${i}`).value.trim();
+                if(!nameInput) nameInput = `Player ${i+1}`;
+                let isBot = document.getElementById(`ptype-${i}`).classList.contains('bot');
+                
+                gamePlayers.push({
+                    name: nameInput.substring(0,10),
+                    color: playerColors[i],
+                    isBot: isBot,
+                    stepIdx: -1, 
+                    inHome: true,
+                    isFinished: false
+                });
+            }
+            
+            changeScreen('game-screen');
+            updateTurnUI();
+            
+            setInterval(() => {
+                glowTick = (glowTick + 1) % 20;
+                manageGameTiming(); 
+                drawLudoBoard();
+            }, 80);
+        }
+
+        function manageGameTiming() {
+            let elapsedSeconds = (Date.now() - gameStartTime) / 1000;
+            if (elapsedSeconds > 250 && elapsedSeconds <= 550) {
+                timeModifier = 1.6; 
+            } else if (elapsedSeconds > 550) {
+                timeModifier = 2.6; 
+            }
+        }
+
+        function drawLudoBoard() {
+            ctx.clearRect(0, 0, 600, 600);
+            const step = 600 / 15;
+
+            // 4 मुख्य बेस
+            ctx.fillStyle = playerColors[0]; ctx.fillRect(0, 0, step*6, step*6);
+            ctx.fillStyle = playerColors[1]; ctx.fillRect(step*9, 0, step*6, step*6);
+            ctx.fillStyle = playerColors[2]; ctx.fillRect(step*9, step*9, step*6, step*6);
+            ctx.fillStyle = playerColors[3]; ctx.fillRect(0, step*9, step*6, step*6);
+
+            // टर्न वाले प्लेयर के घर पर ग्लो इफ़ेक्ट
+            if (glowTick < 10 && !gamePlayers[currentPlayerIdx].isFinished) {
+                ctx.fillStyle = "rgba(255,255,255,0.25)";
+                if(currentPlayerIdx === 0) ctx.fillRect(0, 0, step*6, step*6);
+                if(currentPlayerIdx === 1) ctx.fillRect(step*9, 0, step*6, step*6);
+                if(currentPlayerIdx === 2) ctx.fillRect(step*9, step*9, step*6, step*6);
+                if(currentPlayerIdx === 3) ctx.fillRect(0, step*9, step*6, step*6);
+            }
+
+            // पाथ ग्रिड
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    if ((i >= 6 && i <= 8) || (j >= 6 && j <= 8)) {
+                        if (i < 6 && j < 6 || i > 8 && j < 6 || i < 6 && j > 8 || i > 8 && j > 8) continue;
+                        ctx.fillStyle = '#141420';
+                        ctx.fillRect(i * step, j * step, step, step);
+                        ctx.strokeRect(i * step, j * step, step, step);
+                    }
+                }
+            }
+
+            // होम पाथवे
+            ctx.fillStyle = playerColors[0]; for(let i=1; i<=5; i++) ctx.fillRect(i*step, 7*step, step, step);
+            ctx.fillStyle = playerColors[1]; for(let i=1; i<=5; i++) ctx.fillRect(7*step, i*step, step, step);
+            ctx.fillStyle = playerColors[2]; for(let i=9; i<=13; i++) ctx.fillRect(7*step, i*step, step, step);
+            ctx.fillStyle = playerColors[3]; for(let i=9; i<=13; i++) ctx.fillRect(i*step, 7*step, step, step);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(step*6, step*6, step*3, step*3);
+
+            // P5 - P8 के हाउस बेस
+            const subPositions = [{x: 300, y: 45}, {x: 555, y: 300}, {x: 300, y: 555}, {x: 45, y: 300}];
+            for(let i=4; i<totalPlayers; i++) {
+                let pos = subPositions[i-4];
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 30, 0, 2 * Math.PI);
+                ctx.fillStyle = playerColors[i];
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (currentPlayerIdx === i && glowTick < 10 && !gamePlayers[currentPlayerIdx].isFinished) {
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 34, 0, 2 * Math.PI);
+                    ctx.fillStyle = "rgba(255,255,255,0.3)";
+                    ctx.fill();
+                }
+            }
+
+            // गोटियाँ और नाम रेंडर
+            gamePlayers.forEach((p, idx) => {
+                if(p.isFinished) return;
+                let tx, ty;
+
+                if (p.inHome) {
+                    if(idx === 0) { tx = 90; ty = 90; }
+                    else if(idx === 1) { tx = 510; ty = 90; }
+                    else if(idx === 2) { tx = 510; ty = 510; }
+                    else if(idx === 3) { tx = 90; ty = 510; }
+                    else { tx = subPositions[idx-4].x; ty = subPositions[idx-4].y; }
+                } else {
+                    let coord = boardLayoutCoords[p.stepIdx % 52];
+                    tx = coord.x * step + step/2;
+                    ty = coord.y * step + step/2;
+                }
+
+                ctx.beginPath();
+                ctx.arc(tx, ty, 14, 0, 2 * Math.PI);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(p.name, tx, ty - 18);
+            });
+        }
+
+        function handleRoll() {
+            if (isDiceRolled || gamePlayers[currentPlayerIdx].isFinished) return;
+            isDiceRolled = true;
+
+            if(goldenDiceActive) {
+                diceValue = Math.random() > 0.5 ? 5 : 6;
+                goldenDiceActive = false;
+                document.getElementById('dice-element').style.background = 'white';
+            } else {
+                if (timeModifier > 1.5 && Math.random() > 0.4) {
+                    diceValue = Math.floor(Math.random() * 3) + 4; 
+                } else {
+                    diceValue = Math.floor(Math.random() * 6) + 1;
+                }
+            }
+
+            let count = 0;
+            let anim = setInterval(() => {
+                document.getElementById('dice-element').innerText = Math.floor(Math.random() * 6) + 1;
+                count++;
+                if(count > 6) {
+                    clearInterval(anim);
+                    document.getElementById('dice-element').innerText = diceValue;
+                    executeEngineMovement();
+                }
+            }, 70);
+        }
+
+        function executeEngineMovement() {
+            let p = gamePlayers[currentPlayerIdx];
+            let banner = document.getElementById('twist-banner');
+            banner.innerText = "";
+
+            if (p.inHome) {
+                if (diceValue === 6) {
+                    p
